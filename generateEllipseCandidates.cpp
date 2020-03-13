@@ -1479,6 +1479,7 @@ static double rect_nfa(struct rect * rec, image_double angles, double logNT)
     When |Ixx| > |Iyy| we use the first, otherwise the second (just to
     get better numeric precision).
  */
+// 和ELSD不同， ELSD和ELSDc相同， 这里增加极性判断
 static double get_theta( point2i * reg, int reg_size, double x, double y,
                          image_double modgrad, double reg_angle, double prec )
 {
@@ -1551,8 +1552,11 @@ static double get_theta( point2i * reg, int reg_size, double x, double y,
 }
 
 /*----------------------------------------------------------------------------*/
-/** Computes a rectangle that covers a region of point2is.
- */
+/** Compute a rectangle that covers a connected region of points. A rectangle is
+defined by end points, center, orientation, width. Additional fields
+(precision of approximation) are useful for validation.
+计算连通rect空间 调用了gettheta. 计算theta角 AME as ELSD
+*/
 static void region2rect( point2i * reg, int reg_size,
 						image_double modgrad, double reg_angle,
                          double prec, double p, struct rect * rec )
@@ -1953,6 +1957,7 @@ static int reduce_region_radius( struct point2i * reg, int * reg_size,
     point2i, but using the estimated angle tolerance. If this fails to
     produce a rectangle with the right density of region point2is,
     'reduce_region_radius' is called to try to satisfy this condition.
+	这个函数和ELSDc不同
  */
 static int refine( struct point2i * reg, int * reg_size, image_double modgrad,
                    double reg_angle, double prec, double p, struct rect * rec,
@@ -2264,7 +2269,7 @@ double * LineSegmentDetection( int * n_out,
 		//reg是长度为imgN*imgM的一维point2i型数组，有足够大的空间存储生长的区域，reg_size是里面存储了数据的数量，记录的是区域的point2i
 		//reg_angle是该区域的主方向的double型变量，存的角度是弧度制
 		  seed_cnt ++;
-        region_grow( list_p_temp->x, list_p_temp->y, angles, reg, &reg_size,&reg_angle, used, prec );
+        region_grow( list_p_temp->x, list_p_temp->y, angles, reg, &reg_size,&reg_angle, used, prec );//和ELSD一样
 
         /* reject small regions */
         if( reg_size < min_reg_size ) 
@@ -2274,8 +2279,9 @@ double * LineSegmentDetection( int * n_out,
 		}
 
         /* construct rectangular approximation for the region */
-		//根据生长的区域得到近似外接矩阵的参数，矩形参数包括:起点，终点，方向theta，宽度等
+		//根据生长的区域得到近似外接矩阵的参数，矩形参数包括:起点，终点，方向theta，宽度等 这个函数和ELSDC一样
         region2rect(reg,reg_size,modgrad,reg_angle,prec,p,&main_rect);
+		// 这里只是计算了极性标志
 		if( FALSE == isArcSegment(reg,reg_size,&main_rect,angles,used,pol,prec,p,&rect_up,&rect_down))
 			continue;
         /* Check if the rectangle exceeds the minimal density of
@@ -4918,9 +4924,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	int reg_x;
 	int reg_y;
     double* out=mylsd(&n, data,imgx,imgy,&reg,&reg_x,&reg_y);
-	groupLSs(out,n,reg,reg_x,reg_y,&groups);//分组
+	// 核心分组
+	groupLSs(out,n,reg,reg_x,reg_y,&groups);//分组 对线段按照凸性和距离进行分组
 	free(reg); //释放内存
-	calcuGroupCoverage(out,n,groups,coverages);//计算每个组的覆盖角度
+	calcuGroupCoverage(out,n,groups,coverages);//计算每个组的覆盖角度  计算groups中每个组的跨度 coverages为输出
 
     printf("The number of output arc-support line segments: %i\n",n);
 	printf("The number of arc-support groups:%i\n",groups.size());
@@ -4932,7 +4939,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	printf("Groups' total ls num:%i\n",groups_t);*/
 
 	 image_double angles;
-	 if(edge_process_select == 1)
+	 if(edge_process_select == 1)// 这里没啥用，只为输出显示
 		calculateGradient2(data,imgx,imgy,&angles); //version2, sobel; version 3 canny
 	 else 
 		 calculateGradient3(data,imgx,imgy,&angles); //version2, sobel; version 3 canny
@@ -4942,10 +4949,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	 double * candidates_out;//输出候选椭圆指针
 	 int  candidates_num = 0;//候选椭圆数量
 	 //rejectShortLines(out,n,&new_n);
+	 // 组合椭圆数据组
 	 pairGroupList = getValidInitialEllipseSet(out,n,&groups,coverages,angles,distance_tolerance,specified_polarity);
 	 if(pairGroupList != NULL)
 	 {
 		printf("The number of initial ellipses：%i \n",pairGroupList->length);
+		// 最后根据组算出椭圆
 		generateEllipseCandidates(pairGroupList, distance_tolerance, candidates, &candidates_num);
 		printf("The number of ellipse candidates: %i \n",candidates_num);
 		
@@ -4970,6 +4979,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	 double *gradient_vec_out;
 	 plhs[1] = mxCreateNumericMatrix(imgy,imgx,mxUINT8_CLASS,mxREAL);
 	 edgeimg_out = (uchar*)mxGetData(plhs[1]);
+
+	// 输出
 	 //将边缘图复制到矩阵edgeimg_out中
 	 //将梯度向量存到矩阵gradient_vec_out中
 	 unsigned long addr,g_cnt = 0;
