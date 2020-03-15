@@ -3384,9 +3384,10 @@ void calculateGradient2( double * img_in, unsigned int imgx, unsigned int imgy, 
 }
 
 //=============================================================================
-//需要包含如下头文件
+//需要包含如下头文件 dxarr, dyarr用cvSobel算出来的
 //#include <opencv2\opencv.hpp>
-//using namespace cv;
+//using namespace cv;  这家伙直接拷贝了一个canny算子到这里. 
+// https://blog.csdn.net/zhangfuliang123/article/details/76087842
 void cvCanny3(	const void* srcarr, void* dstarr,
 				void* dxarr, void* dyarr,
                 int aperture_size )
@@ -3672,7 +3673,7 @@ void cvCanny3(	const void* srcarr, void* dstarr,
         mag_buf[2] = _mag;
     }
 
-    // now track the edges (hysteresis thresholding)
+    // now track the edges (hysteresis 磁滞 thresholding)
     while( stack_top > stack_bottom )
     {
         uchar* m;
@@ -3754,7 +3755,7 @@ void calculateGradient3( double * img_in, unsigned int imgx, unsigned int imgy, 
 			gray.data[addr] = (uchar)(img_in[addr]);
 		}
 	//canny
-   Canny3(gray,edge,DX,DY,3,false);
+   Canny3(gray,edge,DX,DY,3,false); // edge由磁滞算出. 用来生成angels
    for ( y = 0; y<imgy; y++)
    {
 	    short* _dx = DX.ptr<short>(y);
@@ -4939,10 +4940,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	printf("Groups' total ls num:%i\n",groups_t);*/
 
 	 image_double angles;
-	 if(edge_process_select == 1)// 这里没啥用，只为输出显示
+	 if(edge_process_select == 1)// 计算角度angles 等于上面的白算了? 全重算
 		calculateGradient2(data,imgx,imgy,&angles); //version2, sobel; version 3 canny
 	 else 
-		 calculateGradient3(data,imgx,imgy,&angles); //version2, sobel; version 3 canny
+		 calculateGradient3(data,imgx,imgy,&angles); //version2, sobel; version 3 canny // 这里面又算了梯度和磁滞
 	 PairGroupList * pairGroupList;
 	 double distance_tolerance = 2;//max( 2.0, 0.005*min(angles->xsize,angles->ysize) ); // 0.005%*min(xsize,ysize)
 	 double * candidates; //候选椭圆
