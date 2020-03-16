@@ -4983,7 +4983,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	 edgeimg_out = (uchar*)mxGetData(plhs[1]);
 
 	// 输出
-	 //将边缘图复制到矩阵edgeimg_out中
+	 //将边缘图复制到矩阵edgeimg_out中  edge 就是原始的angles图 原始的
 	 //将梯度向量存到矩阵gradient_vec_out中
 	 unsigned long addr,g_cnt = 0;
 	 for ( int c = 0; c < imgx; c++ )
@@ -5000,7 +5000,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			 }
 		 }
 	 printf("edge pixel number: %i\n",edge_pixels_total_num);
-	//申请edge_pixels_total_num x 2 来保存每一个边缘点的梯度向量，以列为优先，符合matlab的习惯
+	//申请edge_pixels_total_num x 2 来保存每一个边缘点的梯度向量，以列为优先，符合matlab的习惯 
+	 // 输出 normals 从angles里给出sin和cos的图 angles来自canny计算后的图 canny dx dy
 	 plhs[2] = mxCreateDoubleMatrix(2,edge_pixels_total_num,mxREAL);
 	 gradient_vec_out = (double*)mxGetPr(plhs[2]);
 	  for ( int c = 0; c < imgx; c++ )
@@ -5014,7 +5015,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			 }
 		 }
 	 //---------------------------------------------------------------------
-	//输出线段检测的图像
+	//输出线段检测的图像 直线和椭圆 输出为lsimg 
 	if(nlhs == 4)
 	{
 		Mat ls_mat = Mat::zeros(imgy,imgx,CV_8UC1);

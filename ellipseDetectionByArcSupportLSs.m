@@ -16,6 +16,11 @@ function [ellipses, L, posi] = ellipseDetectionByArcSupportLSs(I, Tac, Tr, speci
     unit_dis_tolerance = 2; %max([2, 0.005 * min([size(I, 1), size(I, 2)])]);%内点距离的容忍差小于max(2,0.5%*minsize)
     normal_tolerance = pi/9; %法线容忍角度20°= pi/9
     t0 = clock;
+    
+    % 输出参数 candidates 椭圆参数
+    % edge edge图
+    % normals 角度 所有椭圆参数上的点的角度
+    % lsimg 所有的点图
     if(size(I,3)>1)
         I = rgb2gray(I);
         [candidates, edge, normals, lsimg] = generateEllipseCandidates(I, 2, specified_polarity);%1,sobel; 2,canny
