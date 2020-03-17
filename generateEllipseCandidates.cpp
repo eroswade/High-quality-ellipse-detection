@@ -4902,6 +4902,12 @@ mex generateEllipseCandidates.cpp -IF:\OpenCV\opencv2.4.9\build\include -IF:\Ope
 */
 //======================================MEX function==================================================================
 
+// test output
+//The number of output arc-support line segments: 150
+//The number of arc - support groups : 29
+//The number of initial ellipses£º23
+//The number of ellipse candidates : 13
+
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	if(nrhs!=3)
