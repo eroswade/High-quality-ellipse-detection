@@ -1,0 +1,4 @@
+
+%mex generateEllipseCandidates.cpp -IF:\OpenCV\opencv2.4.9\build\include -IF:\OpenCV\opencv2.4.9\build\include\opencv -IF:\OpenCV\opencv2.4.9\build\include\opencv2 -LF:\OpenCV\opencv2.4.9\build\x64\vc11\lib -IF:\Matlab\settlein\extern\include -LF:\Matlab\settlein\extern\lib\win64\microsoft -lopencv_core249 -lopencv_highgui249 -lopencv_imgproc249 -llibmwlapack.lib  
+
+mex generateEllipseCandidates.cpp -IE:\CV\Released\Build3.4.1\include -IE:\CV\Released\Build3.4.1\include\opencv -IE:\CV\Released\Build3.4.1\include\opencv2 -LE:\CV\Released\Build3.4.1\lib\Release -I"D:\Program Files\MATLAB\R2016a\extern\include" -L"D:\Program Files\MATLAB\R2016a\extern\lib\win64\microsoft" -lopencv_core341 -lopencv_highgui341 -lopencv_imgproc341 -llibmwlapack.lib  

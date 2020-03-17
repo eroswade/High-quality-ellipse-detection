@@ -2538,8 +2538,8 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 				label[currentLine] = 1; //标记该线段已经被分组
 				//head = tail = NULL;
 		        bincnt = 0;
-				dir_vec1.x = lines[currentLine*8+4];
-				dir_vec1.y = lines[currentLine*8+5];
+				dir_vec1.x = lines[currentLine*8+4];//dx
+				dir_vec1.y = lines[currentLine*8+5];//dy
 				if ( lines[currentLine*8+7] == 1)//极性为正
 				{
 					//将dir_vec1逆时针旋转45°
@@ -2610,6 +2610,7 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 				else
 					isEnd = 1;//结束，已经找不到可以分组的线段了
 			}
+			//!!!!!! eros  下面是从尾部开始搜索
 			//先从第i条线段的尾部开始搜索，进行分组,结果存在group_down里面。记住，第i条线段在group_up和group_down中的0索引处都储存了
 			group_down[group_down_cnt++] = i;
 			isEnd = 0;//置零，表示还可以从当前线段开始搜索，还未结束
@@ -4225,6 +4226,9 @@ inline double d_rosin (double *param, double x, double y)
 //group_inliers_num:记录着各个组的支持内点数量的数组，实时更新，初始时为0
 //输出
 //ellipara
+// eros 2020年3月17日
+// 这个函数不止是验证了一个椭圆的参数, 
+// 同时也做两个椭圆是否为一个椭圆的验证.
 bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vector<int>> * groups, int first_group_ind,int second_group_ind, double * fit_matrix1, double * fit_matrix2, image_double angles, double distance_tolerance, unsigned int * group_inliers_num, point5d *ellipara)
 {
 	double S[36]; //拟合矩阵S
@@ -4555,7 +4559,7 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 	//selection of salient elliptic hypothesis
 	for ( i = 0; i<groupsNum; i++)
 	{
-		if(coverages[i] >= M_4_9_PI )//当组的覆盖角度>= 4pi/9 = 80°, 我们认为具有很大的显著性，可直接拟合提取
+		if(coverages[i] >= M_4_9_PI )//!!!!!!eros 2020年3月17日 当组的覆盖角度>= 4pi/9 = 80°, 我们认为具有很大的显著性，可直接拟合提取
 		{
 			//加入极性判断,只提取指定极性的椭圆
 			if (specified_polarity == 0 || (lines[(*groups)[i][0]*8+7] == specified_polarity))
@@ -4568,11 +4572,11 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 					error("getValidInitialEllipseSet, selection of salient ellipses failed!");//这种情况会出现？？,跑54.jpg出现该问题
 				}
 				PairGroupNode * node = (PairGroupNode*)malloc(sizeof(PairGroupNode));
-				node->center.x = ellipara.x;
+				node->center.x = ellipara.x;//中心点
 				node->center.y = ellipara.y;
-				node->axis.x   = ellipara.a;
+				node->axis.x   = ellipara.a;//x y 轴长
 				node->axis.y   = ellipara.b;
-				node->phi      = ellipara.phi;
+				node->phi      = ellipara.phi;// theta 椭圆参数方程的THETA 注意,不是一般方程  eros 2020年3月17日
 				node->pairGroupInd.x = i;
 				node->pairGroupInd.y = -1;//无
 				if(head != NULL)
@@ -4655,7 +4659,7 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 		PairGroupNode *p;
 		p = head;
 		pairGroupList = pairGroupListInit(pairlength);
-		for( int i = 0; i<pairGroupList->length; i++)
+		for( int i = 0; i<pairGroupList->length; i++)//把同一个椭圆的计入同一组pairGroupList. eros. 2020年3月17日
 		{
 			pairGroupList->pairGroup[i].center.x = p->center.x;
 			pairGroupList->pairGroup[i].center.y = p->center.y;
@@ -4932,9 +4936,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	// out reg 标记 regiongrow 一维数组
 	// out reg_x reg_y size of reg
     double* out=mylsd(&n, data,imgx,imgy,&reg,&reg_x,&reg_y);
-	// 2. 核心分组 按照凸性和距离进行分组
+	// 2. 核心分组 按照凸性和距离进行分组 !!!!! eros 2020年3月17日 这里的分组也进行了排序
 	groupLSs(out,n,reg,reg_x,reg_y,&groups);//分组 对线段按照凸性和距离进行分组
 	free(reg); //释放内存
+
 	// 3. 计算每个组的覆盖角度 角度跨度 coverages为每个组的cover角度
 	// input out 凸包组 由第二步计算出
 	// input n 检测到的线段量 
@@ -4966,7 +4971,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	 double * candidates_out;//输出候选椭圆指针
 	 int  candidates_num = 0;//候选椭圆数量
 	 //rejectShortLines(out,n,&new_n);
-	 // 5. 组合椭圆数据组 验证椭圆组
+	 // 5. 组合椭圆数据组 验证椭圆组 !!! eros 2020年3月17日 也就是把同一个椭圆的椭圆组成一组椭圆组
 	 // input out 凸包
 	 // input n 检测到的线段量
 	 // input groups 组
