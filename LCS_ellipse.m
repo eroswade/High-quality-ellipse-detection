@@ -14,7 +14,7 @@ function []  = LCS_ellipse()
 close all;
 
 %image path
-filename = 'D:\Graduate Design\Ellipse Detection\MyEllipse - github\pics\666.jpg';
+filename = '666.jpg';
 
 % parameters
 Tac = 165;
