@@ -2503,6 +2503,11 @@ inline double rotateAngle(double start_angle, double end_angle, int polarity)
 //lines_num:
 //输出分组groups. 每个组是一个vector<int>
 //注意：切记用完region,需要在函数外面手动释放region
+// !!! eros 2020年3月18日
+// 逻辑
+// 旋转当前线段(根据极性旋转)40度 在这个范围内,4*4范围找region标注的线段
+// 如果votebin(temp)数量>5 并且label没有被标记 并且极性相同 计为同一个group
+// 一条一条的查过去
 void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vector<vector<int>> * groups)
 {
 	if (line_num == 0)
@@ -2532,12 +2537,12 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 			//先从第i条线段的头部开始搜索，进行分组,结果存在group_up里面
 			group_up[group_up_cnt++] = i;//记录线段i,注意线段是0~line_num-1
 			isEnd = 0;//置零，表示还可以从当前线段开始搜索，还未结束
-			currentLine = i;
+			currentLine = i; // 确定当前的线段
 			while (isEnd == 0)
 			{
 				label[currentLine] = 1; //标记该线段已经被分组
 				//head = tail = NULL;
-				bincnt = 0;
+				bincnt = 0;// 每次从0开始一条一条遍历
 				dir_vec1.x = lines[currentLine * 8 + 4];//dx   // x1,y1,x2,y2,dx,dy,length,polarity
 				dir_vec1.y = lines[currentLine * 8 + 5];//dy
 				if (lines[currentLine * 8 + 7] == 1)//极性为正  //polarity 如果极性为正
@@ -2560,14 +2565,14 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 						yy = (int)(lines[currentLine * 8 + 3] * 0.8 + j*dir_vec1.y + k*dir_vec2.y);
 						if (xx < 0 || xx >= imgx || yy < 0 || yy >= imgy)//越界
 							continue;
-						temp = region[yy*imgx + xx];
+						temp = region[yy*imgx + xx]; // eros 获取当前点的label分配
 						if (temp > 0)//表示有线段的支持区域，在1~line_num
 						{
 							region[yy*imgx + xx] = -temp;//取负数标记 !! eros 表示已经用过了不再参与计算
 							for (xx = 0; xx < bincnt; xx++)
 							{
 								// eros x记录线段索引，y记录票数
-								if (votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1
+								if (votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1 eros temp-1 表示line regiongrow label. 减1,是因为它原来是1base的
 								{
 									votebin[xx].y++;
 									break;
@@ -2591,9 +2596,10 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 					if (votebin[j].y > temp)
 					{
 						temp = votebin[j].y;
-						xx = votebin[j].x;//借用xx变量
+						xx = votebin[j].x;//借用xx变量 eros 找到votebin最多的线的ID.
 					}
 				}
+				//eros  如果votebin(temp)数量>5 并且label没有被标记 并且极性相同
 				if (temp >= 5 && label[xx] == 0 && lines[8 * xx + 7] == lines[8 * i + 7])//待实验调整参数值
 				{
 					if (group_up_cnt == line_num)
@@ -2602,7 +2608,7 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 					start_angle = atan2(lines[8 * group_up[yy] + 5], lines[8 * group_up[yy] + 4]);// dx dy 
 					end_angle = atan2(lines[8 * xx + 5], lines[8 * xx + 4]);
 					angle_delta = rotateAngle(start_angle, end_angle, (int)lines[8 * i + 7]);
-					if (angle_delta <= M_3_8_PI)//相邻两线段的旋转夹角也需要满足在pi/4内
+					if (angle_delta <= M_3_8_PI)//相邻两线段的旋转夹角也需要满足在pi*3/8内
 					{
 						group_up[group_up_cnt++] = xx;//压入线段
 						currentLine = xx; //更新当前搜索线段
@@ -3942,7 +3948,7 @@ inline void calcuFitMatrix(point2d* dataxy, int datanum, double * S)
 {
 	double* D = (double*)malloc(datanum * 6 * sizeof(double));
 	memset(D, 0, sizeof(double)*datanum);
-	for (int i = 0; i < datanum; i++)
+	for (int i = 0; i < datanum; i++) // 下面构造偏导数
 	{
 		D[i * 6] = dataxy[i].x*dataxy[i].x;
 		D[i * 6 + 1] = dataxy[i].x*dataxy[i].y;
@@ -4551,12 +4557,13 @@ PairGroupList * getValidInitialEllipseSet(double * lines, int line_num, vector<v
 		cnt_temp = 0;//千万注意要清0
 		for (j = 0; j < (*groups)[i].size(); j++)
 		{
-			//每一条线段有2个端点
+			//每一条线段有2个端点 把每一条线的两个顶点, 构造成dataxy
 			dataxy[cnt_temp].x = lines[(*groups)[i][j] * 8];
 			dataxy[cnt_temp++].y = lines[(*groups)[i][j] * 8 + 1];
 			dataxy[cnt_temp].x = lines[(*groups)[i][j] * 8 + 2];
 			dataxy[cnt_temp++].y = lines[(*groups)[i][j] * 8 + 3];
 		}
+		// 计算拟合矩阵 存入 fitMatrixes
 		calcuFitMatrix(dataxy, cnt_temp, fitMatrixes + i * 36);
 	}
 	free(dataxy);//释放内存
