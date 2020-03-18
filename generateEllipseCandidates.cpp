@@ -2512,7 +2512,7 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 	}
 	unsigned char isEnd = 0;//是否还可以继续搜寻
 	int currentLine; //当前线段
-	char * label = (char*)calloc(line_num, sizeof(char));
+	char * label = (char*)calloc(line_num, sizeof(char));// 所有的线给一个LABEL
 	memset(label, 0, sizeof(char)*line_num); //init the label all to be zero
 	int * group_up = (int*)malloc(sizeof(int)*line_num);//申请足够内存，存储延线段方向得到的分组的线段
 	int * group_down = (int*)malloc(sizeof(int)*line_num);//存储线段反方向分组的线段
@@ -2538,15 +2538,15 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 				label[currentLine] = 1; //标记该线段已经被分组
 				//head = tail = NULL;
 				bincnt = 0;
-				dir_vec1.x = lines[currentLine * 8 + 4];//dx
+				dir_vec1.x = lines[currentLine * 8 + 4];//dx   // x1,y1,x2,y2,dx,dy,length,polarity
 				dir_vec1.y = lines[currentLine * 8 + 5];//dy
-				if (lines[currentLine * 8 + 7] == 1)//极性为正
+				if (lines[currentLine * 8 + 7] == 1)//极性为正  //polarity 如果极性为正
 				{
 					//将dir_vec1逆时针旋转45°
 					dir_vec2.x = (dir_vec1.x + dir_vec1.y)*0.707106781186548; // sqrt(2)/2 = 0.707106781186548
 					dir_vec2.y = (-dir_vec1.x + dir_vec1.y)*0.707106781186548;
 				}
-				else
+				else // 否则极性为负
 				{
 					//将dir_vec1顺时针旋转45°
 					dir_vec2.x = (dir_vec1.x - dir_vec1.y)*0.707106781186548; // sqrt(2)/2 = 0.707106781186548
@@ -2554,7 +2554,7 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 				}
 				for (int j = 1; j <= 4; j++)
 				{
-					for (int k = 1; k <= 4; k++)//在4x4邻域内搜索
+					for (int k = 1; k <= 4; k++)//在4x4邻域内搜索 // 判断当前线段尾部4*4范围 如果点未处理, 
 					{
 						xx = (int)(lines[currentLine * 8 + 2] * 0.8 + j*dir_vec1.x + k*dir_vec2.x);
 						yy = (int)(lines[currentLine * 8 + 3] * 0.8 + j*dir_vec1.y + k*dir_vec2.y);
@@ -2566,6 +2566,7 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 							region[yy*imgx + xx] = -temp;//取负数标记 !! eros 表示已经用过了不再参与计算
 							for (xx = 0; xx < bincnt; xx++)
 							{
+								// eros x记录线段索引，y记录票数
 								if (votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1
 								{
 									votebin[xx].y++;
@@ -4939,6 +4940,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	int reg_x;
 	int reg_y;
 	// 1. 检测线段
+	// out out 线段结构体*n ,每个里面都有:x1,y1,x2,y2,dx,dy,length,polarity //dx,dy == sin(theta) cos(theta)
 	// out n 线段数量
 	// in data image
 	// in imgx,imgy size x,y
@@ -4960,12 +4962,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	printf("The number of output arc-support line segments: %i\n", n);
 	//The number of arc - support groups : 29
 	printf("The number of arc-support groups:%i\n", groups.size());
-	/*int groups_t = 0;
+	int groups_t = 0;
 	for (int i = 0; i<groups.size(); i++)
 	{
-		groups_t+= groups[i].size();
+		int groupnum = groups[i].size();
+		groups_t+= groupnum;
+		printf("Group %d num:%i\n",i, groupnum);
+		//for (int j = 0; j < groupnum; j++)
+		//{
+		//	printf("lineid = %d \n", groups[i][j]);
+		//}
 	}
-	printf("Groups' total ls num:%i\n",groups_t);*/
+	//printf("Groups' total ls num:%i\n",groups_t);
 
 	// 4. 重算canny边上的角度
 	// data 原图

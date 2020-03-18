@@ -1,4 +1,4 @@
-function [ellipses, L, posi] = ellipseDetectionByArcSupportLSs(I, Tac, Tr, specified_polarity)
+function [ellipses, L, posi, lsimg] = ellipseDetectionByArcSupportLSs(I, Tac, Tr, specified_polarity)
 %input:
 % I: input image
 % Tac: elliptic angular coverage (completeness degree)

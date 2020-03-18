@@ -1,4 +1,4 @@
-function []  = LCS_ellipse()
+% function []  = LCS_ellipse()
 %% parameters illustration
 %1) Tac: 
 %The threshold of elliptic angular coverage which ranges from 0~360. 
@@ -10,7 +10,7 @@ function []  = LCS_ellipse()
 %1 means detecting the ellipses with positive polarity;
 %-1 means detecting the ellipses with negative polarity; 
 %0 means detecting all ellipses from image
-
+clear
 close all;
 
 %image path
@@ -28,7 +28,7 @@ I = imread(filename);
 
 
 %% detecting ellipses from real-world images
-[ellipses, ~, posi] = ellipseDetectionByArcSupportLSs(I, Tac, Tr, specified_polarity);
+[ellipses, ~, posi,lsimg] = ellipseDetectionByArcSupportLSs(I, Tac, Tr, specified_polarity);
 
 disp('draw detected ellipses');
 drawEllipses(ellipses',I);
@@ -45,7 +45,7 @@ disp(['The total number of detected ellipses£º',num2str(size(ellipses,1))]);
 %% write the result image
 %set(gcf,'position',[0 0 size(I,2) size(I,1)]);
 %saveas(gcf, 'D:\Graduate Design\Ellipse Detection\MyEllipse - github\pics\666_all.jpg', 'jpg');
-end
+% end
 
 
 
